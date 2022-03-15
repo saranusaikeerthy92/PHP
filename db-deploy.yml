@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy2
+  labels:
+     app: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      terminationGracePeriodSeconds: 10
+      imagePullSecrets:
+      - name: my-key
+      volumes:
+      - name: mysql-store
+        persistentVolumeClaim:
+           claimName: mysql-pvc
+      containers:
+      - name: db-ctr
+        image: devopstrainer/java-mvn-privaterepo:mysql
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3306
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysql-password
+                key: MYSQL_ROOT_PASSWORD
+        volumeMounts:
+        - name: mysql-store
+          mountPath: /var/lib/mysql
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  labels:
+    app: mysql
+spec:
+  ports:
+  - port: 3306
+  clusterIP: None
+  selector:
+     app: mysql
